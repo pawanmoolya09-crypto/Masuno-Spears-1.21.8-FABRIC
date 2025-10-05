@@ -11,6 +11,7 @@ import net.masuno.network.SpearHitPayload;
 import net.masuno.network.VelocityPayload;
 import net.masuno.spear.ModItems;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -34,13 +35,18 @@ public class ModEvents {
       ServerTickEvents.END_SERVER_TICK.register((EndTick)server -> {
          for (ServerWorld world : server.getWorlds()) {
             for (ServerPlayerEntity player : world.getPlayers()) {
-               if (!player.isUsingItem() || !player.getMainHandStack().isIn(ModItems.SPEARS)) {
-                  spearFrames.put(player.getUuid(), 0);
-               } else if (spearFrames.containsKey(player.getUuid())) {
-                  spearFrames.put(player.getUuid(), spearFrames.get(player.getUuid()) + 1);
-               } else {
-                  spearFrames.put(player.getUuid(), 0);
-               }
+                if (!player.isUsingItem() || !player.getMainHandStack().isIn(ModItems.SPEARS)) {
+                    spearFrames.put(player.getUuid(), 0);
+                }
+                else if (spearFrames.containsKey(player.getUuid())) {
+                    spearFrames.put(player.getUuid(), spearFrames.get(player.getUuid()) + 1);
+                    float mult = SpearBackport.getMultiplier(player.getMainHandStack());
+                    if (spearFrames.get(player.getUuid()) > SpearBackport.SpearDownedTime * mult)
+                        if (!player.getItemCooldownManager().isCoolingDown(player.getMainHandStack())) player.getItemCooldownManager().set(player.getMainHandStack(),SpearBackport.getCooldown(player.getMainHandStack()));
+                }
+                else {
+                    spearFrames.put(player.getUuid(), 0);
+                }
             }
          }
       });
@@ -54,13 +60,13 @@ public class ModEvents {
          (payload, context) -> {
             if (context.player().getMainHandStack().isIn(ModItems.SPEARS)) {
                if (context.player().getWorld().getEntityById(payload.id()) instanceof LivingEntity livingEntity
-                  && livingEntity.isInRange(context.player(), 3.0)
+                  && livingEntity.isInRange(context.player(), 4.0)
                   && livingEntity.hurtTime <= 0
                   && spearFrames.containsKey(context.player().getUuid())) {
 
 
                   float mult = SpearBackport.getMultiplier(context.player().getMainHandStack());
-                  float power_mult = SpearBackport.getBasePower(context.player().getMainHandStack()) * 3.0F;
+                  float power_mult = SpearBackport.getBasePower(context.player().getMainHandStack()) * 4.0F * (context.player().getWorld().getGameRules().getInt(SpearBackport.SPEAR_DAMAGE_PERCENTAGE) / 100f);
                   if ((float)spearFrames.get(context.player().getUuid()).intValue() >= (float)SpearBackport.maxSpearTime * mult) {
                      return;
                   }
@@ -68,10 +74,14 @@ public class ModEvents {
                   DamageSource source = context.player().getWorld().getDamageSources().playerAttack(context.player());
 
 
-                  float power = (float) getSpearPower(livingEntity, context.player(),context.player().getHorizontalFacing().getDoubleVector());
-                  livingEntity.damage(
-                     context.player().getWorld(), source, SpearBackport.getBasePower(context.player().getMainHandStack()) + power * power_mult
-                  );
+                  float power = (float) getSpearPower(livingEntity, context.player());
+                  boolean didDamage = livingEntity.damage(
+                          context.player().getWorld(),
+                          source,
+                          (float) context.player().getAttributeValue(EntityAttributes.ATTACK_DAMAGE)  + power * power_mult);
+
+                  if (!didDamage) return;
+
                   if (power > 1.4F) {
                      context.player()
                         .getWorld()
@@ -97,7 +107,7 @@ public class ModEvents {
       );
    }
 
-   public static double getSpearPower(LivingEntity victim,ServerPlayerEntity player, Vec3d forward) {
+   public static double getSpearPower(LivingEntity victim,ServerPlayerEntity player) {
         Vec3d velocity = getPlayerVelocity(player);
 
         Vec3d victimVelocity = victim.getVelocity();
@@ -106,14 +116,10 @@ public class ModEvents {
         }
 
         Vec3d relativeVelocity = velocity.subtract(victimVelocity);
-        double forwarding = 2 - DiffVec(relativeVelocity,forward);
-        forwarding = Math.clamp(forwarding,0,forwarding);
-        return relativeVelocity.multiply(forwarding).length();
-   }
+        double strength = relativeVelocity.length();
+        double close_to_zero = Math.max(10 - strength, 0);
+        strength += close_to_zero * 0.1;
 
-    public static double DiffVec(Vec3d a, Vec3d b) {
-        a = a.normalize();
-        b = b.normalize();
-        return a.dotProduct(b);
-    }
+        return strength;
+   }
 }

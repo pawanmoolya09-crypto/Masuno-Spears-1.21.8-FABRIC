@@ -1,15 +1,8 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "#": "minecraft:stick",
-    "X": "#minecraft:netherite_tool_materials"
-  },
-  "pattern": [
-    "  X",
-    " # ",
-    "#  "
-  ],
+  "type": "minecraft:smithing_transform",
+  "base": "spear:diamond_spear",
+  "addition": "minecraft:netherite_ingot",
+  "template": "minecraft:netherite_upgrade_smithing_template",
   "result": {
     "count": 1,
     "id": "spear:netherite_spear"

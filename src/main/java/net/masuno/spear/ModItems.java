@@ -14,9 +14,7 @@ import net.minecraft.item.Items;
 import net.minecraft.item.consume.UseAction;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.registry.tag.TagKey;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 
 public class ModItems {

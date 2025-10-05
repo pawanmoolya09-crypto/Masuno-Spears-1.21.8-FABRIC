@@ -1,16 +1,21 @@
 package net.masuno;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.masuno.events.ModEvents;
 import net.masuno.network.RegisterPayloads;
 import net.masuno.spear.ModItems;
 import net.minecraft.item.ItemStack;
+import net.minecraft.world.GameRules;
 
 public class SpearBackport implements ModInitializer {
    public static int maxSpearDismountTime = 30;
    public static int maxSpearKbTime = 45;
    public static int maxSpearTime = 60;
-
+   public static int SpearDownedTime = 62;
+   public static final GameRules.Key<GameRules.IntRule> SPEAR_DAMAGE_PERCENTAGE =
+           GameRuleRegistry.register("spearDamagePercentage", GameRules.Category.PLAYER, GameRuleFactory.createIntRule(100));
    public void onInitialize() {
       RegisterPayloads.init();
       ModItems.initialize();
@@ -47,6 +52,21 @@ public class SpearBackport implements ModInitializer {
          return 3.0F;
       } else {
          return spear.isOf(ModItems.WOODEN_SPEAR) ? 3.0F : 0.0F;
+      }
+   }
+   public static int getCooldown(ItemStack spear) {
+      if (spear.isOf(ModItems.NETHERITE_SPEAR)) {
+         return 20;
+      } else if (spear.isOf(ModItems.DIAMOND_SPEAR)) {
+         return 25;
+      } else if (spear.isOf(ModItems.IRON_SPEAR)) {
+         return 30;
+      } else if (spear.isOf(ModItems.STONE_SPEAR)) {
+         return 35;
+      } else if (spear.isOf(ModItems.GOLDEN_SPEAR)) {
+         return 40;
+      } else {
+         return spear.isOf(ModItems.WOODEN_SPEAR) ? 40 : 0;
       }
    }
 }

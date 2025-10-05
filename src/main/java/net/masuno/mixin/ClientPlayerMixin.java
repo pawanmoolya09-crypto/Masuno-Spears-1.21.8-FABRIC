@@ -1,10 +1,13 @@
 package net.masuno.mixin;
 
 import net.masuno.spear.ModItems;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -14,6 +17,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin({ClientPlayerEntity.class})
 public abstract class ClientPlayerMixin {
+
+    @Shadow @Final protected MinecraftClient client;
+
+    @Shadow protected abstract boolean isBlind();
+
+    @Shadow protected abstract boolean canSprint();
+
+    @Shadow protected abstract boolean canVehicleSprint(Entity vehicle);
+
+    @Shadow private boolean falling;
 
     @Inject(
       method = {"applyMovementSpeedFactors"},
@@ -36,6 +49,34 @@ public abstract class ClientPlayerMixin {
 
            cir.setReturnValue(applyDirectionalMovementSpeedFactors(vec2f));
        }
+   }
+
+   @Inject(method = "canStartSprinting", at = @At("HEAD"),cancellable = true)
+   private void InjectCanSprint(CallbackInfoReturnable<Boolean> cir){
+        boolean result;
+        if (client.player == null) return;
+
+        if (!client.player.getMainHandStack().isIn(ModItems.SPEARS)){
+            result = !((ClientPlayerEntity)(Object)this).isSprinting()
+                    && ((ClientPlayerEntity)(Object)this).input.hasForwardMovement()
+                    && canSprint()
+                    && !((ClientPlayerEntity)(Object)this).isUsingItem()
+                    && !isBlind()
+                    && (!((ClientPlayerEntity)(Object)this).hasVehicle() || canVehicleSprint(((ClientPlayerEntity)(Object)this).getVehicle()))
+                    && (!((ClientPlayerEntity)(Object)this).isGliding() || ((ClientPlayerEntity)(Object)this).isSubmergedInWater())
+                    && (!((ClientPlayerEntity)(Object)this).shouldSlowDown() || ((ClientPlayerEntity)(Object)this).isSubmergedInWater())
+                    && (!((ClientPlayerEntity)(Object)this).isTouchingWater() || ((ClientPlayerEntity)(Object)this).isSubmergedInWater());
+        }else {
+            result = !((ClientPlayerEntity)(Object)this).isSprinting()
+                    && ((ClientPlayerEntity)(Object)this).input.hasForwardMovement()
+                    && canSprint()
+                    && !isBlind()
+                    && (!((ClientPlayerEntity)(Object)this).hasVehicle() || canVehicleSprint(((ClientPlayerEntity)(Object)this).getVehicle()))
+                    && (!((ClientPlayerEntity)(Object)this).isGliding() || ((ClientPlayerEntity)(Object)this).isSubmergedInWater())
+                    && (!((ClientPlayerEntity)(Object)this).shouldSlowDown() || ((ClientPlayerEntity)(Object)this).isSubmergedInWater())
+                    && (!((ClientPlayerEntity)(Object)this).isTouchingWater() || ((ClientPlayerEntity)(Object)this).isSubmergedInWater());
+        }
+        cir.setReturnValue(result);
    }
 
     @Unique
