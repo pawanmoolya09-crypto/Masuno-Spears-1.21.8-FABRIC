@@ -6,15 +6,15 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class SpearItem extends Item {
-   public SpearItem(Item.Settings settings) {
-      super(settings);
-   }
+    public SpearItem(Item.Settings settings) {
+        super(settings);
+    }
 
     @Override
-    public void postHit(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+    public boolean postHit(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         if (attacker instanceof PlayerEntity player) {
             player.getItemCooldownManager().set(stack, 20);
         }
-        super.postHit(stack, target, attacker);
+        return super.postHit(stack, target, attacker);
     }
 }
